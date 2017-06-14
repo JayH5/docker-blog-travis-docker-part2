@@ -1,0 +1,35 @@
+sudo: required
+services:
+  - docker
+env:
+  global:
+    - IMAGE_NAME=mytestorganization/hello
+    - REGISTRY_USER=testblogdeploy
+    # REGISTRY_PASS=...
+    - secure: "fVGfvny7yYSVTssyEMqRllwJKV7vGrWvYvl8m6oyRF213TtyyO/saQKmW5xiXQHwAJyfi3dsXvpGRLi/WJ6V7BCIYwecJW2LAxNpnznlDBLNZ/otVSCuCsL9zmkQDCY6f5giyhUkFvRzKr/Eq7rcU76Sdwd3qvBDVv6coCd1g+CcNGslkGTAk86/Po5ZM+1949Tfb+83Slk916brDnspMHZPkOmmZjRdKIzHnP0QYNzkxhYYISZVcou8mrfATSpg2mxBob+JHsuTJnts021oZN+4V98URwdgysEh1AHju3DY4lbN/YPv2kC9gTijPNYsUEtrhh1aZyfNMrYomozw4Q4GkkOEZjiVmw/VpDwr7nU4waW2FbZf+b5HecCwUKGgiSw7kVbcyoBbJX2Tgo9IpRAtEbA0IF9lERI0PRvXlqe/ZQ5+S3lk3xshN2trsMhfCgVu9I57a5phHF4EcxG/MOBNPRObhLppcbrQyD49sz5bLnoC5JzwS8o4NnccysMn4Spnr4Tzcf7UDi67Ww3qaFskx05V0TaPUB9vL/lBaTSGjejhDm3B/uxep8Bnpr4VYkPdAoKAw8tQ2JpeikEwPxXdYv3wFlr8MnXbzzR9OpsU6tso3X/xeNyYudQFL5zl8B+Qt6bxdlMMFEmx3mFXDGB0eiYkc8EUB4CDzjlQe7Q="
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y -o Dpkg::Options::="--force-confold" docker-engine
+
+before_script:
+  - version="$(sed -nE 's/^blog-travis-docker==(\S+).*/\1/p' requirements.txt)"
+  - docker pull "$IMAGE_NAME" || true
+script:
+  - docker build --pull --cache-from "$IMAGE_NAME" --tag "$IMAGE_NAME" .
+  - docker run "$IMAGE_NAME"
+
+after_script:
+  - docker images
+
+before_deploy:
+  - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+deploy:
+  provider: script
+  script: |
+    docker tag "$IMAGE_NAME" "${IMAGE_NAME}:latest"
+    docker tag "$IMAGE_NAME" "${IMAGE_NAME}:${version}"
+    docker push "${IMAGE_NAME}:latest"
+    docker push "${IMAGE_NAME}:${version}"
+  on:
+    branch: master
