@@ -26,7 +26,7 @@ before_deploy:
   - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
 deploy:
   provider: script
-  script: |
+  script: >
     docker tag "$IMAGE_NAME" "${IMAGE_NAME}:latest"
     && docker tag "$IMAGE_NAME" "${IMAGE_NAME}:${version}"
     && docker push "${IMAGE_NAME}:latest"
